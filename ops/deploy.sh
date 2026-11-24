@@ -23,6 +23,9 @@ git pull --ff-only
 step "Устанавливаем библиотеки"
 composer install --no-dev --optimize-autoloader --no-interaction
 
+step "Папка журнала хранилища: запись для PHP-FPM (apache)"
+sudo install -d -o apache -g apache -m 775 storage/logs
+
 step "Создаём недостающие таблицы"
 php bin/init-db.php
 
