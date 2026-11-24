@@ -17,14 +17,14 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 sudo nginx -t
 
+step "Папка журнала хранилища: пишет ec2-user (git), читает и пишет PHP-FPM (группа apache)"
+sudo install -d -o ec2-user -g apache -m 775 storage/logs
+
 step "Забираем новый код из GitHub"
 git pull --ff-only
 
 step "Устанавливаем библиотеки"
 composer install --no-dev --optimize-autoloader --no-interaction
-
-step "Папка журнала хранилища: запись для PHP-FPM (apache)"
-sudo install -d -o apache -g apache -m 775 storage/logs
 
 step "Создаём недостающие таблицы"
 php bin/init-db.php
