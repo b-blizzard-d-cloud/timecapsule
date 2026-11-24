@@ -1,0 +1,7 @@
+{
+  "Comment": "LR5 task 10: A db -> CNAME db (RDS endpoint) in one batch, no gap",
+  "Changes": [
+    { "Action": "DELETE", "ResourceRecordSet": { "Name": "db.timecapsule.internal.", "Type": "A", "TTL": 60, "ResourceRecords": [ { "Value": "DB_SERVER_PRIVATE_IP" } ] } },
+    { "Action": "CREATE", "ResourceRecordSet": { "Name": "db.timecapsule.internal.", "Type": "CNAME", "TTL": 60, "ResourceRecords": [ { "Value": "RDS_ENDPOINT" } ] } }
+  ]
+}
