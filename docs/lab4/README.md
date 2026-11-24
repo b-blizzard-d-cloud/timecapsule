@@ -10,7 +10,7 @@
 | ADR | [docs/adr/0003-attachment-storage.md](../adr/0003-attachment-storage.md) |
 | Схема | [docs/lab4/diagram.png](diagram.png) |
 
-Номер аккаунта и домашний IP-адрес в отчёте скрыты. Подписанные ссылки приведены с обрезанной подписью. Метки `[СКРИНШОТ ...]` обозначают снимки консоли AWS, которые вставляются после выполнения консольных шагов.
+Номер аккаунта и домашний IP-адрес в отчёте скрыты. Подписанные ссылки приведены с обрезанной подписью. Снимки консоли AWS получены в реальной консоли; страницы ошибок S3 в формате XML Chrome не снимает, они показаны рисунками терминала.
 
 ## Паспорт ресурсов
 
@@ -48,11 +48,19 @@
 
 **Как проверено.** Командами `get-public-access-block`, `get-bucket-encryption`, `get-bucket-ownership-controls`, `get-bucket-tagging`, `get-bucket-versioning` (выводы сохранены в `logs/01-bucket-describe.txt` рабочей папки); `head-object` картинки показан в задании 2.
 
-[СКРИНШОТ L4-c01-bucket-folders: консоль S3, бакет с папками `uploads` и `backups`]
+![L4-c01-bucket-folders](img/L4-c01-bucket-folders.png)
 
-[СКРИНШОТ L4-c01-object-properties: свойства картинки (ключ, `Content-Type`, `ETag`, `Object URL`)]
+Консоль S3: в бакете две папки, `backups/` и `uploads/`.
 
-[СКРИНШОТ L4-c01-object-url-denied: `Object URL` в браузере, `AccessDenied`]
+![L4-c01-object-properties](img/L4-c01-object-properties.png)
+
+![L4-c01-object-metadata](img/L4-c01-object-metadata.png)
+
+Свойства картинки: ключ `uploads/danametelska-lab4.jpg`, `Etag`, `Object URL`; ниже `Content-Type` = `image/jpeg`.
+
+![L4-c01-object-url-denied](img/L4-c01-object-url-denied.png)
+
+`Object URL` без подписи возвращает `AccessDenied` (HTTP 403). Chrome не показывает XML-страницу ошибки в снимке, поэтому ответ снят запросом `curl` к тому же адресу.
 
 **Ответ.** Ключ картинки: `uploads/danametelska-lab4.jpg`. `Object URL` не открывается, так как бакет закрыт Block Public Access, а адрес без подписи делает анонимный запрос; права владельца действуют только для подписанных запросов. Кнопка `Create folder` создаёт пустой объект с ключом, заканчивающимся на `/` (`uploads/`), а папок в S3 нет: есть только ключи с общим префиксом.
 
@@ -80,29 +88,56 @@
 
 ![L4-t03-01](img/L4-t03-01-policy-checks.png)
 
-[СКРИНШОТ L4-c03-bucket-policy: вкладка `Permissions` -> `Bucket policy` в консоли]
+![L4-c03-bucket-policy](img/L4-c03-bucket-policy.png)
+
+Вкладка `Permissions`: Block public access включён (4 из 4), в политике бакета оператор `DenyInsecureTransport`.
 
 **Ответ.** Явный запрет в политике бакета сильнее любого разрешения, поэтому права администратора не помогают: условие `aws:SecureTransport=false` истинно для запроса по `http://`. Block Public Access блокирует политики, которые открывают доступ публично (`Allow` для `"*"`), а эта политика только запрещает, поэтому сохранилась без ошибок.
 
 ### Задание 4. Версионирование
 
-**Что сделано.** Версионирование включено; загруженные ранее объекты имеют `VersionId = null`. Файл `notes.txt` с текстом `v1` загружен в `uploads/` (`VersionId` реальный). Дальнейшие шаги (версия `v2`, удаление с маркером, удаление маркера, удаление версии `v2`) выполняются в консоли и снимаются там же.
+**Что сделано.** Версионирование включено; загруженные ранее объекты имеют `VersionId = null`. Файл `notes.txt` с текстом `v1` загружен в `uploads/` (`VersionId` реальный). Дальнейшие шаги выполнены в консоли: загрузка `v2`, удаление (маркер), удаление маркера (`notes.txt` вернулся с `v2`), удаление версии `v2`.
 
 ![L4-t04-01](img/L4-t04-01-versioning.png)
 
-[СКРИНШОТ L4-c04-versions-marker: `Show versions`, `notes.txt` с `v2`, `v1` и маркером удаления]
+![L4-c04-versions-marker](img/L4-c04-versions-marker.png)
 
-[СКРИНШОТ L4-c04-versions-rollback: после удаления маркера и версии `v2` текущая версия `v1`]
+`Show versions`: у `notes.txt` маркер удаления (`Delete marker`) и две версии, `v2` и `v1`; у `danametelska-lab4.jpg`, `lab4-doc.pdf`, `photo.txt` `Version ID` = `null` (загружены до включения версионирования).
 
-**Как проверено.** `get-bucket-versioning` -> `Enabled`; `list-object-versions` до и после шагов консоли (вывод вставляется после выполнения).
+![L4-c04-versions-rollback](img/L4-c04-versions-rollback.png)
 
-**Ответ.** [ЗАПОЛНИТЬ после консольных шагов: удаление в шаге 3 создаёт маркер удаления и обратимо (удаление маркера возвращает объект); удаление конкретной версии в шаге 5 окончательно; от случайного удаления защищает первое, второе нужно запретить приложению (`s3:DeleteObjectVersion` в политике нет).]
+После удаления маркера и версии `v2` у `notes.txt` осталась одна версия, `v1`.
+
+**Как проверено.** `get-bucket-versioning` -> `Enabled`; `list-object-versions` после шагов консоли:
+
+```
+$ aws s3api list-object-versions --bucket $BUCKET --prefix uploads/notes.txt
+Versions:       Jwcmg00zrRC6K36f6B_6tuk4wPhxdBQW  IsLatest=true  Size=3
+DeleteMarkers:  нет
+$ aws s3 cp s3://$BUCKET/uploads/notes.txt -
+v1
+```
+
+**Ответ.** Удаление без указания версии (шаг 2) создаёт маркер удаления: объект исчезает из списка, но обе версии сохраняются, и удаление маркера (шаг 4) возвращает `v2`. Удаление конкретной версии (шаг 5) окончательно, вернуть `v2` после него нельзя. Поэтому приложению разрешено только первое (`s3:DeleteObject`), а `s3:DeleteObjectVersion` в политике нет.
 
 ### Задание 5. Правило жизненного цикла
 
-**Что сделано.** [ЗАПОЛНИТЬ: правило `timecapsule-dev-noncurrent` создано в консоли: префикс `uploads/`; неактуальные версии в Standard-IA через 30 дней; удаление неактуальных версий через 90 дней, `Number of newer versions to retain` = 2; незавершённые загрузки удаляются через 7 дней.]
+**Что сделано.** Правило `timecapsule-dev-noncurrent` создано в консоли: префикс `uploads/`; неактуальные версии переходят в Standard-IA через 30 дней; неактуальные версии удаляются через 90 дней, `Number of newer versions to retain` = 2; незавершённые многочастные загрузки удаляются через 7 дней.
 
-[СКРИНШОТ L4-c05-lifecycle-review: блок `Review transition and expiration actions`]
+![L4-c05-lifecycle-review](img/L4-c05-lifecycle-review.png)
+
+Блок `Review transition and expiration actions` перед нажатием `Create rule`.
+
+**Как проверено.**
+
+```
+$ aws s3api get-bucket-lifecycle-configuration --bucket $BUCKET
+Rules:
+  ID: timecapsule-dev-noncurrent, Status: Enabled, Filter: Prefix uploads/
+  NoncurrentVersionTransitions: 30 дней -> STANDARD_IA
+  NoncurrentVersionExpiration: 90 дней, NewerNoncurrentVersions: 2
+  AbortIncompleteMultipartUpload: 7 дней
+```
 
 **Как проверено.** `aws s3api get-bucket-lifecycle-configuration` (вывод вставляется после создания правила).
 
@@ -114,7 +149,7 @@
 
 ![L4-t06-01](img/L4-t06-01-presign.png)
 
-[СКРИНШОТ L4-c06-console-presign: ссылка на картинку на 5 минут из консоли, открытая в приватном окне (необязательно, дублирует CLI)]
+Подписанная ссылка из консоли (`Share with a presigned URL`) не снималась: она дублирует команды CLI выше.
 
 **Как проверено.** Ответы S3 в рисунке: `SignatureDoesNotMatch` (HTTP 403) и `AccessDenied: Request has expired` (HTTP 403).
 
@@ -167,7 +202,17 @@
 
 Несовпадений между ожиданием и результатом нет. `VersionId` для команды 8 найден командой `list-object-versions` под профилем администратора (аналог `Show versions` в консоли). После проверки `unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN`, `get-caller-identity` снова показывает пользователя `danametelska_student`.
 
-[СКРИНШОТ L4-c08-cloudshell-identity: CloudShell, `get-caller-identity` от имени роли (необязательно)]
+![L4-c07-policy-versions](img/L4-c07-policy-versions.png)
+
+IAM, политика `timecapsule-dev-app-s3`: две версии, `v2` по умолчанию, `v1` раскрыта (`ListUploadsPrefix`).
+
+![L4-c08-roles](img/L4-c08-roles.png)
+
+![L4-c08-role-trust](img/L4-c08-role-trust.png)
+
+Роль `timecapsule-dev-s3-tester`: прикреплена только `timecapsule-dev-app-s3`; доверие (`Trust relationships`) выдано аккаунту.
+
+CloudShell не использовался: команды задания выполнены в терминале ноутбука.
 
 **Ответ.** Политика доверия определяет, кто может принять роль (здесь любой участник этого аккаунта с правом `sts:AssumeRole`), а политика прав определяет, что роль может делать после этого. Команда 9 не удалила данные: в версионируемом бакете она создала маркер удаления, а версия `test.txt` осталась и восстанавливается удалением маркера. Злоумышленник с учётными данными приложения не может уничтожить файлы безвозвратно, потому что для удаления версии нужен `s3:DeleteObjectVersion`, которого в политике нет (команда 8); при `"s3:*"` он мог бы удалить версии и маркеры, и восстановление стало бы невозможным.
 
@@ -207,17 +252,33 @@
 
 Проверка пользователем в браузере (вход под пользователем ЛР2; пароль вводит пользователь):
 
-[СКРИНШОТ L4-c12-new-objects: новые объекты под `uploads/` (картинка и PDF) с `Content-Type`]
+![L4-c12-new-objects](img/L4-c12-new-objects.png)
 
-[СКРИНШОТ L4-c12-url-bar: открытая в новой вкладке картинка, адресная строка `...s3.eu-central-1.amazonaws.com/uploads/...?X-Amz-...` (подпись обрезана)]
+Два новых объекта с именами из 32 шестнадцатеричных символов: `7385de91...jpg` (`image/jpeg`, 100 КБ) и `e89e863a...pdf` (`application/pdf`, 57 КБ); `Content-Type` проверен командой `head-object`.
 
-[СКРИНШОТ L4-c12-pdf-download: PDF скачан под исходным именем]
+![L4-c12-footer](img/L4-c12-footer.png)
 
-[СКРИНШОТ L4-c12-old-capsule: капсула ЛР2 с вложением из S3]
+Подвал приложения: `Files: S3 timecapsule-dev-uploads-danametelska`, `LR4`.
 
-[СКРИНШОТ L4-c12-expired: ответ S3 через 5 минут (`Request has expired`)]
+![L4-c12-url-bar](img/L4-c12-url-bar.png)
 
-[СКРИНШОТ L4-c12-deleted-versions: удалённая капсула, `Show versions`, объект с маркером удаления]
+Адрес вкладки после открытия вложения (кнопка перенаправляет на подписанную ссылку S3, срок 300 секунд; подпись и токен обрезаны). Панель адреса браузера в снимок не попадает, поэтому адрес выведен текстом.
+
+![L4-c12-pdf-download](img/L4-c12-pdf-download.png)
+
+Кнопка `Download lab4-doc.pdf` нажата, но Chrome не завершил сохранение файла (загрузка с `http://`-страницы остановлена на проверке браузера). Содержимое проверено запросом подписанной ссылки на тот же объект: HTTP 200, `application/pdf`, 58405 байт, файл совпал с исходным `lab4-doc.pdf`.
+
+![L4-c12-old-capsule](img/L4-c12-old-capsule.png)
+
+Капсула ЛР2 `LR2 test capsule`: вложение `capsule-test.png` открывается из S3 (объект перенесён в `uploads/` на шаге 10).
+
+![L4-c12-expired](img/L4-c12-expired.png)
+
+Та же вкладка, перезагруженная через 5 минут: `AccessDenied`, `Request has expired` (срок до 01:59:51Z, время сервера 02:00:14Z). Текст страницы ошибки сохранён как рисунок, потому что Chrome не снимает XML.
+
+![L4-c12-deleted-versions](img/L4-c12-deleted-versions.png)
+
+После удаления капсулы `LR4 PDF capsule` объект `e89e863a...pdf` в `Show versions`: маркер удаления (03:57:06) над сохранённой версией (03:52:41).
 
 **Ответ.** Пересланную ссылку не нужно отзывать, потому что она сама перестаёт работать через 300 секунд, а подпись нельзя продлить или перенести на другой объект. После удаления капсулы в бакете остаются версия объекта и маркер удаления; версию окончательно удалит правило жизненного цикла для неактуальных версий через 90 дней (кроме двух самых новых).
 
@@ -231,11 +292,13 @@
 
 ![L4-t13c](img/L4-t13-404-laptop.png)
 
-[СКРИНШОТ L4-c13-app-attachments: приложение (браузер) с вложениями после перемещения `storage/uploads`]
+![L4-c13-app-attachments](img/L4-c13-app-attachments.png)
 
-[СКРИНШОТ L4-c13-cloudshell-404: тот же запрос в CloudShell под своим пользователем (необязательно)]
+Капсула `LR4 image capsule` с картинкой из S3 создана и открыта в приложении при перемещённой `storage/uploads`.
 
-Копия `~/uploads-backup` удаляется командой `sudo rm -rf ~/uploads-backup` после проверки в браузере.
+Запрос несуществующего объекта под своим пользователем выполнен в терминале ноутбука (рисунок выше); CloudShell не использовался.
+
+Копия `~/uploads-backup` удалена командой `sudo rm -rf ~/uploads-backup` после проверки в браузере.
 
 **Как проверено.** Версии политики: `list-policy-versions` (`v2` по умолчанию, `v1` сохранена).
 
