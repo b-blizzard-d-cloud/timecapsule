@@ -10,7 +10,7 @@
 
 ## Решение
 
-База приложения размещается в Amazon RDS for PostgreSQL 16.14: экземпляр `timecapsule-dev-rds`, класс `db.t4g.micro`, `gp3` 20 ГиБ без автоматического увеличения, шифрование включено, одна зона `eu-central-1a`, без публичного доступа, доступ только от `timecapsule-dev-web-sg` (группа `timecapsule-dev-rds-sg`). Ветка 16 выбрана ради совместимости с `pg_dump` 16 на сервере приложения. Приложение находит базу по прежнему имени `db.timecapsule.internal`: запись A в приватной зоне Route 53 заменена записью CNAME на endpoint RDS, `DB_HOST` не менялся. Ночью (23:00, `Europe/Chisinau`) базу останавливает EventBridge Scheduler (`timecapsule-dev-rds-nightly-stop`) от имени роли, которой разрешён только `rds:StopDBInstance` на эту базу.
+База приложения размещается в Amazon RDS for PostgreSQL 16.15: экземпляр `timecapsule-dev-rds`, класс `db.t4g.micro`, `gp3` 20 ГиБ без автоматического увеличения, шифрование включено, одна зона `eu-central-1a`, без публичного доступа, доступ только от `timecapsule-dev-web-sg` (группа `timecapsule-dev-rds-sg`). Ветка 16 выбрана ради совместимости с `pg_dump` 16 на сервере приложения. Приложение находит базу по прежнему имени `db.timecapsule.internal`: запись A в приватной зоне Route 53 заменена записью CNAME на endpoint RDS, `DB_HOST` не менялся. Ночью (23:00, `Europe/Chisinau`) базу останавливает EventBridge Scheduler (`timecapsule-dev-rds-nightly-stop`) от имени роли, которой разрешён только `rds:StopDBInstance` на эту базу.
 
 ## Рассмотренные альтернативы
 
