@@ -62,7 +62,11 @@
 
 Проверено: у пустой подсети `describe-subnets` возвращает `AvailableIpAddressCount = 251` (`private-b`); в остальных подсетях значение меньше на число занятых сетевых интерфейсов (серверы, шлюз NAT).
 
-[СКРИНШОТ КОНСОЛИ: `c01-vpc-subnets.png`, `c01b-vpc.png`; см. CONSOLE_TODO.md]
+![Рисунок 1c.1](img/c01-vpc-subnets.png)
+
+![Рисунок 1c.2](img/c01b-vpc.png)
+
+Рисунки 1c.1-1c.2. Консоль AWS: четыре подсети `timecapsule-dev-vpc` (зоны, CIDR, свободные адреса) и сведения о VPC (CIDR `10.11.0.0/16`, DNS hostnames и DNS resolution включены).
 
 Рисунок 1.1. Список подсетей `timecapsule-dev-vpc` с зонами, диапазонами и числом доступных адресов; параметры VPC.
 
@@ -78,7 +82,15 @@
 
 Выполнено: создан и подключён `timecapsule-dev-igw` (`Attached`); `public-rt` получила маршрут `0.0.0.0/0` на шлюз и связи с `public-a`, `public-b`; `private-rt` без дополнительных маршрутов связана с `private-a`, `private-b`; для `public-a` и `public-b` включено автоназначение публичного IPv4. Проверено командами `describe-internet-gateways`, `describe-route-tables`, `describe-subnets` (`MapPublicIpOnLaunch`).
 
-[СКРИНШОТ КОНСОЛИ: `c03-public-rt.png`, `c03-private-rt.png`]
+![Рисунок 3c.1](img/c03-public-rt.png)
+
+![Рисунок 3c.2](img/c03-public-rt-assoc.png)
+
+![Рисунок 3c.3](img/c03-private-rt.png)
+
+![Рисунок 3c.4](img/c03-private-rt-assoc.png)
+
+Рисунки 3c.1-3c.4. Консоль AWS: маршруты `public-rt` (локальный и `0.0.0.0/0` через Internet Gateway) и её привязки к `public-a`, `public-b`; маршруты `private-rt` (только локальный) и привязки к `private-a`, `private-b`.
 
 Рисунок 3.1. Маршруты и связи с подсетями для `public-rt` и `private-rt`.
 
@@ -88,7 +100,13 @@
 
 Выполнено: `timecapsule-dev-bastion-sg` (SSH с адреса администратора `/32`), `timecapsule-dev-web-sg` (HTTP с `0.0.0.0/0`, SSH от `bastion-sg`), `timecapsule-dev-db-sg` (5432 от `web-sg`, SSH от `bastion-sg`); у каждой заполнено описание и тег `Name`. Проверено `describe-security-groups` (`logs/security-groups.json`).
 
-[СКРИНШОТ КОНСОЛИ: `c04-bastion-sg.png`, `c04-web-sg.png`, `c04-db-sg.png`]
+![Рисунок 4c.1](img/c04-bastion-sg.png)
+
+![Рисунок 4c.2](img/c04-web-sg.png)
+
+![Рисунок 4c.3](img/c04-db-sg.png)
+
+Рисунки 4c.1-4c.3. Консоль AWS: входящие правила `bastion-sg` (SSH с адреса администратора), `web-sg` (HTTP отовсюду, SSH из `bastion-sg`), `db-sg` (PostgreSQL из `web-sg`, SSH из `bastion-sg`).
 
 Рисунок 4.1. Входящие правила трёх групп.
 
@@ -102,7 +120,9 @@
 
 Рисунок 5.1. Страница `web-server`, полученная запросом `curl` по публичному IP: имя сервера и адрес `10.11.0.229` из `10.11.0.0/24`.
 
-[СКРИНШОТ КОНСОЛИ: `c05-web-page.png` (страница `web` в браузере)]
+![Рисунок 5c.1](img/c05-web-page.png)
+
+Рисунок 5c.1. Страница сервера `web` в браузере по публичному адресу: имя хоста и частный адрес `10.11.0.229`.
 
 ![Рисунок 5.2](img/t05-ssh-bastion.png)
 
@@ -138,7 +158,11 @@
 
 Рисунок 6.5. Удаление шлюза (`deleted`), маршрут в состоянии `blackhole`, освобождение адреса, `addresses left: 0`.
 
-[СКРИНШОТ КОНСОЛИ, сделать сразу: `c05a-nat-deleted.png` (NAT gateways, `Deleted`), `c05b-route-blackhole.png` (`private-rt`, `Blackhole`)]
+![Рисунок 6c.1](img/c05a-nat-deleted.png)
+
+![Рисунок 6c.2](img/c05b-route-blackhole.png)
+
+Рисунки 6c.1-6c.2. Консоль AWS: удалённые NAT Gateway в состоянии `Deleted` и маршрут `0.0.0.0/0` в `private-rt` со статусом `Blackhole` (цель удалена, маршрут остался; после снимка он удалён).
 
 **Ответ (checkip).** Команда вернула `18.193.211.17`, то есть Elastic IP шлюза `timecapsule-dev-nat-a`. У `db-server` нет публичного адреса: исходящие пакеты идут через NAT Gateway, который заменяет приватный адрес источника своим внешним, поэтому наружу виден адрес шлюза общий для всей приватной подсети.
 
@@ -164,7 +188,13 @@
 
 Рисунок 7.4. Эксперимент с Network ACL с ноутбука: до правила SSH и сайт работают; при правиле 90 `Deny` для адреса ноутбука оба недоступны (тайм-аут); после удаления правила снова работают.
 
-[СКРИНШОТ КОНСОЛИ: `c07-nacl-rule90.png`, `c07-nacl-cloudshell.png` (второй источник), `c07-tag-editor.png`]
+![Рисунок 7c.1](img/c07-nacl-rule90.png)
+
+![Рисунок 7c.2](img/c07-nacl-cloudshell.png)
+
+![Рисунок 7c.3](img/c07-tag-editor.png)
+
+Рисунки 7c.1-7c.3. Консоль AWS: правило 90 (Deny для адреса ноутбука) в сетевом ACL; запрос из CloudShell (другой источник) к `web` проходит с кодом 200; Tag Editor с тегом `Project = timecapsule` (27 ресурсов).
 
 Рисунок 7.5. Правило 90 в default Network ACL; CloudShell получает ответ 200 при действующем правиле; результат `Tag Editor` с тегом `Project = timecapsule`.
 
@@ -210,7 +240,9 @@ CLI-эквивалент `Tag Editor`: `aws resourcegroupstaggingapi get-resourc
 
 Рисунок 9.3. `/health` по Elastic IP с ноутбука.
 
-[СКРИНШОТ КОНСОЛИ: `c09-app-eip.png` (приложение в браузере по Elastic IP, вход под пользователем ЛР2)]
+![Рисунок 9c.1](img/c09-app-eip.png)
+
+Рисунок 9c.1. Приложение в браузере по Elastic IP `app`, вход выполнен под пользователем ЛР2.
 
 **Ответ.** Пользователи и `APP_URL` обращаются к `app` по публичному адресу, и он не должен меняться, а `bastion` нужен только администратору, который каждый раз берёт его новый адрес из консоли или CLI. Пока сервер остановлен, Elastic IP стоит $0,005 в час: адрес остаётся выделенным, а AWS берёт плату за занятый публичный IPv4. Когда появится балансировщик нагрузки, клиенты станут обращаться к его DNS-имени, и Elastic IP на сервере приложения не понадобится.
 
@@ -236,7 +268,11 @@ CLI-эквивалент `Tag Editor`: `aws resourcegroupstaggingapi get-resourc
 
 Рисунок 11.1. Зона (приватная, VPC `vpc-09b5d15d218dfd2c6`), запись `db`, теги.
 
-[СКРИНШОТ КОНСОЛИ: `c11-route53-record.png`]
+![Рисунок 11c.1](img/c11-route53-details.png)
+
+![Рисунок 11c.2](img/c11-route53-record.png)
+
+Рисунки 11c.1-11c.2. Консоль AWS: приватная зона `timecapsule.internal` (связана с `timecapsule-dev-vpc`) и запись `db` типа A со значением `10.11.10.121`, TTL 60.
 
 ![Рисунок 11.2](img/t11-dig-app.png)
 
@@ -268,7 +304,9 @@ CLI-эквивалент `Tag Editor`: `aws resourcegroupstaggingapi get-resourc
 
 Рисунок 12.4. Образ и снимок удалены.
 
-[СКРИНШОТ КОНСОЛИ: `c12-capsules.png` (капсулы ЛР2 на странице, вход под пользователем ЛР2)]
+![Рисунок 12c.1](img/c12-capsules.png)
+
+Рисунок 12c.1. Капсулы ЛР2 на странице приложения после переключения на `db.timecapsule.internal`.
 
 **Ответ.** Загруженные файлы лежат на диске `app-server` в `/var/www/timecapsule/storage/uploads`, то есть переехали вместе с образом, а не с базой. При удалении `app-server` (Terminate) его диск удаляется вместе с файлами, и они пропадают безвозвратно, если не сделана копия; в базе при этом остаются записи о файлах. Поэтому следующая работа выносит файлы в S3.
 
@@ -284,7 +322,11 @@ CLI-эквивалент `Tag Editor`: `aws resourcegroupstaggingapi get-resourc
 
 Рисунок 13.2. Подвал страницы содержит "LR3", `DB: db.timecapsule.internal`.
 
-[СКРИНШОТ КОНСОЛИ/БРАУЗЕРА: `c13-footer-lr3.png`]
+![Рисунок 13c.1](img/c13-footer-lr3.png)
+
+![Рисунок 13c.2](img/c13-health-db-down.png)
+
+Рисунки 13c.1-13c.2. Подвал страницы с отметкой LR3 и ответ `/health` при остановленной базе данных (`"db":"error"`).
 
 **Ответ.** Скрипт обращается к приложению по локальным путям на самом сервере (`/var/www/timecapsule`, `git pull`, `composer`), а не к адресам сети. Через bastion идёт только транспорт SSH, который описан в `~/.ssh/config`, поэтому изменились лишь параметры подключения, но не команды выпуска.
 
@@ -324,9 +366,13 @@ CLI-эквивалент `Tag Editor`: `aws resourcegroupstaggingapi get-resourc
 
 ## Итог
 
-Состояние после работы указано в `logs/` рабочей папки и в разделе ниже; значения на момент сдачи подставляются при завершении консольной части (см. `CONSOLE_TODO.md`).
+Состояние после работы указано в `logs/` рабочей папки и в разделе ниже; на момент сдачи серверы `bastion`, `app`, `db` остановлены, `web` и LR2 `webserver` завершены, NAT Gateway нет, платным остаётся Elastic IP `app`, диски EBS и приватная зона Route 53.
 
-[СКРИНШОТ КОНСОЛИ: `c14-elastic-ips.png`, `c14-nat-gateways.png`]
+![Рисунок 14c.1](img/c14-elastic-ips.png)
+
+![Рисунок 14c.2](img/c14-nat-gateways.png)
+
+Рисунки 14c.1-14c.2. Консоль AWS: единственный Elastic IP (`timecapsule-dev-app-eip`) и NAT Gateway без состояния `Available` (только `Deleted`).
 
 Рисунок 15.1. `Elastic IPs` (только адрес `app`) и `NAT gateways` (без `Available`).
 
