@@ -8,3 +8,5 @@
 
 # LR3: state of nat-up.sh
 scripts/.nat-state
+/storage/logs/*
+!/storage/logs/.gitkeep
